@@ -46,6 +46,10 @@ public:
     string Preprocess(ifstream& ifs) const;
 
 
+    bool ParseDeclaration(const string &line, VariableDeclaration &decl) const;
+    bool ParseEnumDeclaration(const string &line, int &last_value, pair<string, int> &decl, bool &is_last_member) const;
+    bool ParseAssignExpression(const string &line);
+
 private:
     string MergeAllLines(const list<string> &lines) const;
     bool GetNextToken(string src, size_t &pos, string &token, bool cross_line = true) const;
@@ -53,10 +57,6 @@ private:
     bool GetRestLine(const string &src, size_t &pos, string &line) const;
     void SkipCurrentLine(const string &src, size_t &pos, string &line) const;
     size_t SplitLineIntoTokens(string line, vector<string> &tokens) const;
-    
-    bool ParseDeclaration(const string &line, VariableDeclaration &decl) const;
-    bool ParseEnumDeclaration(const string &line, int &last_value, pair<string, int> &decl, bool &is_last_member) const;
-    bool ParseAssignExpression(const string &line);
 
     void ParsePreProcDirective(const string &src, size_t &pos);
     bool ParseStructUnion(const bool is_struct, const bool is_typedef, const string &src, size_t &pos, VariableDeclaration &decl, bool &is_decl);

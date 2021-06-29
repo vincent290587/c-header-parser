@@ -29,7 +29,10 @@
 using namespace std;
 
 /// Logging level
-LogLevels g_log_level = kInfo;
+LogLevels g_log_level = kError;
+
+
+#define TEST_ASSERT(NAME, X)   if (!(X)) {Error("Test " NAME " failed");return 1;} else { LogLevels lev_prev = g_log_level;g_log_level = kInfo;Info("Test " NAME " success");g_log_level = lev_prev; }
 
 
 void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, set<string> &inc_paths) {
@@ -46,9 +49,16 @@ int main(int argc, char **argv) {
     ParseOptions(argc, argv, struct_name, bin_file, inc_paths);
 
     TypeParser parser;
-    parser.SetIncludePaths(inc_paths);
-    parser.ParseFiles();
-    parser.DumpTypeDefs();
+
+    VariableDeclaration decl;
+    parser.ParseDeclaration("uint16_t test_array[3];", decl);
+
+    TEST_ASSERT("Array_size", decl.array_size==3);
+    TEST_ASSERT("Var_size", decl.var_size==2);
+
+//    parser.SetIncludePaths(inc_paths);
+//    parser.ParseFiles();
+//    parser.DumpTypeDefs();
 
 //    DataReader reader(parser, bin_file);
 //    reader.PrintTypeData(struct_name, false/* struct */);
