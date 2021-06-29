@@ -16,6 +16,8 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#else
+#include "getopt.h"
 #endif
 
 #include <string>
@@ -32,10 +34,9 @@ using namespace std;
 LogLevels g_log_level = kInfo;
 
 void usage(char* prog) {
-    cout << "Usage:\n\t" << prog << " -s <struct_name> -b <binary_file> -i<inclue_path> [-h]" << endl;
+    cout << "Usage:\n\t" << prog << " -s <struct_name> -b <binary_file> -i<include_path> [-h]" << endl;
 }
 
-#ifndef WIN32
 void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, set<string> &inc_paths) {
     char c;
     while ((c = getopt (argc, argv, "s:b:i:h")) != -1) {
@@ -70,13 +71,6 @@ void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, 
             Info("Include path: " + *it);
     }
 }
-#else
-void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, set<string> &inc_paths) {
-    struct_name = "Employee";
-    bin_file    = "../test/Employee.bin";
-    inc_paths.insert("../test");
-}
-#endif
 
 int main(int argc, char **argv) {
 	string struct_name, bin_file;
@@ -87,11 +81,11 @@ int main(int argc, char **argv) {
     TypeParser parser;
     parser.SetIncludePaths(inc_paths);
     parser.ParseFiles();
-    
-    //DataReader reader(parser, bin_file);
-    //reader.PrintTypeData(struct_name, false/* struct */);
-	
-    getchar();
+    parser.DumpTypeDefs();
+
+//    DataReader reader(parser, bin_file);
+//    reader.PrintTypeData(struct_name, false/* struct */);
+
     return 0;
 }
 

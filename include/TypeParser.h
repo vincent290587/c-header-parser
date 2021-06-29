@@ -25,6 +25,7 @@
 
 #include "defines.h"
 
+#define PACK_ALL 1
 
 class TypeParser
 {
@@ -41,8 +42,11 @@ public:
 
     void SetIncludePaths(set <string> paths);
 
+    void DumpTypeDefs() const;
+    string Preprocess(ifstream& ifs) const;
 
 
+private:
     string MergeAllLines(const list<string> &lines) const;
     bool GetNextToken(string src, size_t &pos, string &token, bool cross_line = true) const;
     bool GetNextLine(string src, size_t &pos, string &line) const;
@@ -57,13 +61,14 @@ public:
     void ParsePreProcDirective(const string &src, size_t &pos);
     bool ParseStructUnion(const bool is_struct, const bool is_typedef, const string &src, size_t &pos, VariableDeclaration &decl, bool &is_decl);
     bool ParseEnum(const bool is_typedef, const string &src, size_t &pos, VariableDeclaration &var_decl, bool &is_decl);
+    bool ParseTypedef(const bool is_typedef, const string &src, size_t &pos, VariableDeclaration &var_decl, bool &is_decl);
 
     VariableDeclaration MakePadField(const size_t size) const;
     size_t PadStructMembers(list<VariableDeclaration> &members);
     size_t CalcUnionSize(const list<VariableDeclaration> &members) const;
 
     void StoreStructUnionDef(const bool is_struct, const string &type_name, list<VariableDeclaration> &members);
-private:
+
     /// read in basic data such as keywords/qualifiers, and basic data type sizes
     void Initialize();
 
@@ -71,7 +76,6 @@ private:
     string GetFile(string& filename) const;
 
     // pre-processing
-    string Preprocess(ifstream& ifs) const;
     void StripComments(list<string>& lines) const;
     void TrimLines(list<string>& lines) const;
     void WrapLines(list<string>& lines) const;
@@ -87,7 +91,6 @@ private:
     TokenTypes GetTokenType(const string &token) const;
     bool IsNumericToken(const string &token, long& number) const;
     int  GetTypeSize(const string &data_type) const;
-    void DumpTypeDefs() const;
 
 /// class members
 public:
@@ -124,6 +127,9 @@ private:
     
     /// struct definitons
     map <string, list<VariableDeclaration> > struct_defs_;
+
+    /// struct definitons
+    map <string, string > type_defs_;
 
     /// union definitions
     map <string, list<VariableDeclaration> > union_defs_;

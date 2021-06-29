@@ -2,7 +2,7 @@
 #define _EMPLOYEE_              
 
 #define MAX_NAME_LENGTH 16
-int i=1;
+//int i=1;
 
 // Hometown 
 typedef enum Home

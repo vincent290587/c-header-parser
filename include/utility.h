@@ -79,11 +79,11 @@ static inline std::string rands() {
 // tiny logging facility
 // To use it, g_log_level must be defined in one of the cpp files
 
-enum LogLevels {kError, kDebug, kInfo };
+enum LogLevels { kDebug, kInfo, kError };
 extern LogLevels g_log_level;
 
 static void Log(enum LogLevels level, std::string msg) {
-    if (level > g_log_level) return;
+    if (level < g_log_level) return;
 
     std::ostringstream os;
     switch(level) {

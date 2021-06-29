@@ -17,6 +17,7 @@
 #include <fstream>
 #include <iostream>
 #include <assert.h>
+#include <cmath>
 
 #include "utility.h"
 #include "TypeParser.h"
@@ -42,10 +43,11 @@ TypeParser::TypeParser(void) {
 void TypeParser::Initialize() {
     // basic data types
     const string data_types[] = {
-        "char", "short", "int", "size_t", "ssize_t", "long", "float", "double", "void", "bool", "__int64", 
+        "char", "short", "int", "size_t", "ssize_t", "long", "float", "double", "void", "bool", "__int64",
+        "int8_t", "uint8_t", "int16_t", "uint16_t","int32_t", "uint32_t","int64_t", "uint64_t",
         "__WCHAR_T_TYPE__", "__SIZE_T_TYPE__", "__PTRDIFF_T_TYPE__"
     };
-        
+
     basic_types_ = set<string>(data_types, data_types + sizeof(data_types)/sizeof(string));
 
     // qualifiers to ignore in parsing
@@ -70,8 +72,18 @@ void TypeParser::Initialize() {
     type_sizes_["void"]      = 0;
     type_sizes_["char"]      = 1;
     type_sizes_["short"]     = 2;
+    type_sizes_["double"]    = 8;
     type_sizes_["bool"]      = 1;
     type_sizes_["__WCHAR_T_TYPE__"] = 1;
+
+    type_sizes_["int8_t"] = 1;
+    type_sizes_["uint8_t"] = 1;
+    type_sizes_["int16_t"] = 2;
+    type_sizes_["uint16_t"] = 2;
+    type_sizes_["int32_t"] = 4;
+    type_sizes_["uint32_t"] = 4;
+    type_sizes_["int64_t"] = 8;
+    type_sizes_["uint64_t"] = 8;
     
 }
 
@@ -125,7 +137,6 @@ void TypeParser::ParseFile(const string &file) {
 
     ParseSource(Preprocess(ifs));
 
-    DumpTypeDefs();// TODO: remove it
 }
 
 /*
@@ -237,7 +248,7 @@ void TypeParser::StripComments(list<string>& lines) const {
         line = *it;
         pos = 0;
 
-        Info("parsing line: [" + line + "]");
+        Debug("parsing line: [" + line + "]");
 
         // search comment start
         while (string::npos != (pos = line.find(kSlash, pos))) {
@@ -495,9 +506,12 @@ int TypeParser::GetTypeSize(const string &data_type) const {
         return type_sizes_.at(data_type);
     } else if (enum_defs_.find(data_type) != enum_defs_.end()) {
         return sizeof(int);
+    } else if (type_defs_.find(data_type) != type_defs_.end()) {
+        string matching_type = type_defs_.at(data_type);
+        return type_sizes_.at(matching_type);
     } else {
         Error("Unknown data type - " + data_type);
-        return -1;
+        return 0;
     }
 }
 
@@ -788,6 +802,7 @@ void TypeParser::ParseSource(const string &src) {
 
             case kTypedefKeyword:
                 is_typedef = true;
+                ParseTypedef(is_typedef, src, pos, decl, is_decl);
                 break;
 
             case kBasicDataType:
@@ -803,6 +818,35 @@ void TypeParser::ParseSource(const string &src) {
             }
         }
     }
+}
+
+/// Parse typedef block
+bool TypeParser::ParseTypedef(const bool is_typedef, const string &src, size_t &pos, VariableDeclaration &var_decl, bool &is_decl) {
+    pair<string, int> member;
+    list <pair<string, int> > members;
+    string line, token, next_token, type_name;
+
+    assert(!src.empty() && pos < src.length());
+
+    // peek rest of current line starting from "pos"
+    size_t _pos = pos;
+    if (!GetRestLine(src, _pos, line)) {
+        assert(GetNextLine(src, pos, line));
+    }
+
+    if (line.find(';') != string::npos) {
+
+        // it might be just a simple enum variable declaration like: enum Home home;
+        if (ParseDeclaration(line, var_decl)) {
+
+            assert(var_decl.array_size == 0); // TODO arrays in typedefs are not supported
+            type_defs_[var_decl.var_name] = var_decl.data_type;
+            Info("Found user typedef " + var_decl.var_name);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /// Parse enum block
@@ -942,7 +986,7 @@ bool TypeParser::ParseEnum(const bool is_typedef, const string &src, size_t &pos
 ///            <var> here can be as complicated as "*array[MAX_SIZE]"
 //
 // after calling this function:
-//     struct/union definitons will be stored into class member struct_defs_ or union_defs_
+//     struct/union definitions will be stored into class member struct_defs_ or union_defs_
 //     pos will point to the next kSemicolon following the block end '}',
 //         or equal to src.length() when reaching file end - bad syntax
 //     is_decl returns:
@@ -981,7 +1025,7 @@ bool TypeParser::ParseStructUnion(const bool is_struct, const bool is_typedef, c
 	// the following part should be:
     // 1) struct/union member declarations within the block
     // 2) something out of the block like "} [<type alias|var>];"
-	while (GetNextToken(src, pos, token)) {       
+	while (GetNextToken(src, pos, token)) {
         if ('}' == token.at(0)) { // reach block end
             // process rest part after block end
             start = 1;
@@ -1185,39 +1229,52 @@ bool TypeParser::ParseDeclaration(const string &line, VariableDeclaration &decl)
     assert(!line.empty());
     if (line[line.length()-1] != kSemicolon) return false;
 
+    size_t index = 0;
+    size_t length = 0;
     vector<string> tokens;
     size_t size = SplitLineIntoTokens(line, tokens);
-    assert(size >= 3);  // even the simplest declaration contains 3 tokens: type var ;
+    if (line.find(':') != string::npos) {
 
-    size_t index = 0;
-    decl.data_type = tokens[index];
-    decl.is_pointer = false;
+        assert(size >= 5);// TODO bitfields
 
-    size_t length = GetTypeSize(decl.data_type);
-    if (0 == length) {
-        Debug("Unknown data type - " + decl.data_type);
-        return false;
-    }
+        decl.data_type = "bitfield";
+        decl.var_name = tokens[1];
+        decl.is_pointer = false;
+        decl.array_size = 0;
+        length = stoi(tokens[3]); // tokens 3 & 4
 
-    if (tokens[++index].at(0) == kAsterisk) {
-        decl.is_pointer = true;
-        length = kWordSize_; // size of a pointer is 4 types on a 32-bit system
-        decl.var_name = tokens[++index];
     } else {
-        decl.var_name = tokens[index];
-    }
+        assert(size >= 3);  // even the simplest declaration contains 3 tokens: type var ;
 
-    if (tokens[++index].at(0) == '[') {
-        long number;
-        if (IsNumericToken(tokens[++index], number)) {
-            decl.array_size = number;
-            length *= number;
-        } else {
-            Error("Array size cannot be parsed into a number - " + tokens[index]);
+        decl.data_type = tokens[index];
+        decl.is_pointer = false;
+
+         length = GetTypeSize(decl.data_type);
+        if (0 == length) {
+            Error("Unknown data type size: " + decl.data_type);
             return false;
         }
-    } else {
-        decl.array_size = 0;
+
+        if (tokens[++index].at(0) == kAsterisk) {
+            decl.is_pointer = true;
+            length = kWordSize_; // size of a pointer is 4 types on a 32-bit system
+            decl.var_name = tokens[++index];
+        } else {
+            decl.var_name = tokens[index];
+        }
+
+        if (tokens[++index].at(0) == '[') {
+            long number;
+            if (IsNumericToken(tokens[++index], number)) {
+                decl.array_size = number;
+                // VG length *= number;
+            } else {
+                Error("Array size cannot be parsed into a number - " + tokens[index]);
+                return false;
+            }
+        } else {
+            decl.array_size = 0;
+        }
     }
 
     decl.var_size = length;
@@ -1277,7 +1334,11 @@ size_t TypeParser::PadStructMembers(list<VariableDeclaration> &members) {
     while (it != members.end()) {
         size = it->var_size;
 
-        if (0 == (size % kAlignment_)) {	// current member itself is aligned
+        if (it->array_size > 0) {
+            size *= it->array_size;
+        }
+
+        if (PACK_ALL || 0 == (size % kAlignment_)) {	// current member itself is aligned
             if (last_size > 0) {    // need padding previous members to alignment
                 align_size = static_cast<size_t>(ceil(last_size * 1.0 / kAlignment_) * kAlignment_);
                 pad_size = align_size - last_size;
@@ -1293,12 +1354,7 @@ size_t TypeParser::PadStructMembers(list<VariableDeclaration> &members) {
         } else {	// current member itself cannot align
             // size can only be less than 4 (1 or 2) now unless it's an array
             if (size >= kAlignment_) {
-				if (it->array_size > 0) {
-					Debug("TODO: add array support in PadStructMembers()");
-				} else {
-					Error("Incorrect type size for " + it->var_name);
-				}
-
+                Error("Incorrect type size for " + it->var_name);
                 return 0;
             }
 
@@ -1334,6 +1390,8 @@ size_t TypeParser::PadStructMembers(list<VariableDeclaration> &members) {
 
         }
     }
+
+    assert(total);
 
     return total;
 }
@@ -1372,11 +1430,15 @@ void TypeParser::StoreStructUnionDef(const bool is_struct, const string &type_na
 
     if (is_struct) {
         size = PadStructMembers(members);
-        struct_defs_[type_name] = members;  
+        struct_defs_[type_name] = members;
     } else {
         size = CalcUnionSize(members);
         union_defs_[type_name] = members;
     }
 
     type_sizes_[type_name] = size;
+
+    Info("StoreStructUnionDef name: " + type_name + " size: " + to_string(size));
+    assert(size);
+
 }

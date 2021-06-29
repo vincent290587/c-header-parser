@@ -125,9 +125,16 @@
 #   define S_IWRITE _S_IWRITE                   /* Write permission */
 #   define S_IEXEC  _S_IEXEC                    /* Execute permission */
 #endif
+
+#ifndef S_IFBLK
 #define S_IFBLK   0                             /* Block device */
+#endif
+#ifndef S_IFLNK
 #define S_IFLNK   0                             /* Link */
+#endif
+#ifndef S_IFSOCK
 #define S_IFSOCK  0                             /* Socket */
+#endif
 
 #if defined(_MSC_VER)
 #   define S_IRUSR  S_IREAD                     /* Read user */
@@ -163,13 +170,27 @@
  * only defined for compatibility.  These macros should always return false
  * on Windows.
  */
+#ifndef S_ISFIFO
 #define	S_ISFIFO(mode) (((mode) & S_IFMT) == S_IFFIFO)
+#endif
+#ifndef S_ISDIR
 #define	S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#endif
+#ifndef S_ISREG
 #define	S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+#endif
+#ifndef S_ISLNK
 #define	S_ISLNK(mode)  (((mode) & S_IFMT) == S_IFLNK)
+#endif
+#ifndef S_ISSOCK
 #define	S_ISSOCK(mode) (((mode) & S_IFMT) == S_IFSOCK)
+#endif
+#ifndef S_ISCHR
 #define	S_ISCHR(mode)  (((mode) & S_IFMT) == S_IFCHR)
+#endif
+#ifndef S_ISBLK
 #define	S_ISBLK(mode)  (((mode) & S_IFMT) == S_IFBLK)
+#endif
 
 /* For compatiblity with Unix */
 #if !defined(PATH_MAX)
