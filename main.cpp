@@ -23,6 +23,7 @@
 #include <string>
 #include <iostream>
 #include <set>
+#include <cassert>
 
 #include "utility.h"
 #include "TypeParser.h"
@@ -40,22 +41,33 @@ void usage(char* prog) {
 void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, set<string> &inc_paths) {
     char c;
     while ((c = getopt (argc, argv, "s:b:i:h")) != -1) {
-        switch (c) {
-        case 's':
-            struct_name = string(optarg);
-            break;
+        if (optarg) {
+            string msg = "Argument ";
+            msg += c;
+            msg += " ";
+            msg += optarg;
+            Info(msg);
+            switch (c) {
+            case 's':
+                struct_name = string(optarg);
+                break;
 
-        case 'b':
-            bin_file = string(optarg);
-            break;
+            case 'b':
+                bin_file = string(optarg);
+                break;
 
-        case 'h':
-        case 'i':
-            inc_paths.insert(string(optarg));
-            break;
+            case 'h':
+            case 'i':
+                inc_paths.insert(string(optarg));
+                break;
 
-        default:
-            usage(argv[0]);
+            default:
+                usage(argv[0]);
+            }
+        } else {
+            string msg = "Argument null char ";
+            msg += c;
+            Error(msg);
         }
     }
 
@@ -66,7 +78,7 @@ void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, 
 
     Info("Struct: " + struct_name);
     Info("Binary: " + bin_file);
-   
+
     for(set<string>::iterator it = inc_paths.begin(); it != inc_paths.end(); ++it) {
             Info("Include path: " + *it);
     }
