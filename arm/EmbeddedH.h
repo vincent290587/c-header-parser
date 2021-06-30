@@ -9,13 +9,18 @@
 
 typedef unsigned char Boolean8bit;
 
+//typedef enum {
+//    false8bit = 0x00,
+//    true8bit = 0xff,
+//} Boolean8bit;
+
 //typedef struct {
 //    unsigned char val;
 //} Boolean8bit;
 
 typedef enum {
-    eMySampleEnumVal1,
-    eMySampleEnumVal2,
+    eMySampleEnumVal1 = 1,
+    eMySampleEnumVal2 = 3,
 } eMySampleEnum;
 
 typedef struct {
@@ -48,6 +53,7 @@ typedef struct _TestStruct {
     int16_t manager[3];
     float testf;
     double testd;
+    eMySampleEnum teste;
     ttc_subcmd_executefile_t s1;
     ttc_cmdscheduler_replypacket_t s2;
 } TestStruct;

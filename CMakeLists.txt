@@ -18,6 +18,8 @@ aux_source_directory(windows   SRCS)
 
 add_executable(${PROJECT_NAME} ${SRCS} main.cpp)
 
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+
 target_link_libraries (${PROJECT_NAME} Sqr)
 
 enable_testing()

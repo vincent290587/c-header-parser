@@ -38,9 +38,16 @@ void usage(char* prog) {
     cout << "Usage:\n\t" << prog << " -s <struct_name> -b <binary_file> -i<include_path> [-h]" << endl;
 }
 
-void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, set<string> &inc_paths) {
+typedef struct {
+    string struct_name;
+    string bin_file;
+    string yaml_file;
+    set<string> inc_paths;
+} sParams;
+
+void ParseOptions(int argc, char **argv, sParams &params) {
     char c;
-    while ((c = getopt (argc, argv, "s:b:i:h")) != -1) {
+    while ((c = getopt (argc, argv, "s:b:i:y:h")) != -1) {
         if (optarg) {
             string msg = "Argument ";
             msg += c;
@@ -49,16 +56,20 @@ void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, 
             Info(msg);
             switch (c) {
             case 's':
-                struct_name = string(optarg);
+                params.struct_name = string(optarg);
                 break;
 
             case 'b':
-                bin_file = string(optarg);
+                params.bin_file = string(optarg);
+                break;
+
+            case 'y':
+                params.yaml_file = string(optarg);
                 break;
 
             case 'h':
             case 'i':
-                inc_paths.insert(string(optarg));
+                params.inc_paths.insert(string(optarg));
                 break;
 
             default:
@@ -71,32 +82,38 @@ void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, 
         }
     }
 
-    if (struct_name.empty() || bin_file.empty() || inc_paths.empty()) {
+    if (params.struct_name.empty() || params.inc_paths.empty()) {
         usage(argv[0]);
         return;
     }
 
-    Info("Struct: " + struct_name);
-    Info("Binary: " + bin_file);
+    Info("Struct: " + params.struct_name);
+    Info("Binary: " + params.bin_file);
 
-    for(set<string>::iterator it = inc_paths.begin(); it != inc_paths.end(); ++it) {
+    for(set<string>::iterator it = params.inc_paths.begin(); it != params.inc_paths.end(); ++it) {
             Info("Include path: " + *it);
     }
 }
 
 int main(int argc, char **argv) {
-	string struct_name, bin_file;
-    set<string> inc_paths;
+    sParams params;
     
-    ParseOptions(argc, argv, struct_name, bin_file, inc_paths);
+    ParseOptions(argc, argv, params);
     
     TypeParser parser;
-    parser.SetIncludePaths(inc_paths);
+    parser.SetIncludePaths(params.inc_paths);
     parser.ParseFiles();
     parser.DumpTypeDefs();
 
-//    DataReader reader(parser, bin_file);
-//    reader.PrintTypeData(struct_name, false/* struct */);
+    if (!params.yaml_file.empty()) {
+        std:ofstream ofs(params.yaml_file);
+        parser.DumpYaml(params.struct_name, ofs);
+    }
+
+    if (!params.bin_file.empty()) {
+        DataReader reader(parser, params.bin_file);
+        reader.PrintTypeData(params.struct_name, false/* struct */);
+    }
 
     return 0;
 }

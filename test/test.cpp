@@ -28,7 +28,7 @@
 using namespace std;
 
 /// Logging level
-LogLevels g_log_level = kError;
+LogLevels g_log_level = kWarning;
 
 
 #define TEST_ASSERT(NAME, X)   if (!(X)) {Error("Test " NAME " failed");return 1;} else { LogLevels lev_prev = g_log_level;g_log_level = kInfo;Info("Test " NAME " success");g_log_level = lev_prev; }
@@ -81,12 +81,11 @@ int main(int argc, char **argv) {
     parser.ParseFiles();
 
     string name = "test";
+
+    DataReader reader(parser);
     // dump all to screen
     parser.DumpYaml(name, cout);
-    //parser.DumpTypeDefs();
-
-//    DataReader reader(parser, bin_file);
-//    reader.PrintTypeData(struct_name, false/* struct */);
+    reader.PrintXMLData(struct_name, false, cout);
 
     return 0;
 }

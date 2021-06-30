@@ -25,6 +25,7 @@ using namespace std;
 typedef struct {
     string  data_type;    ///< name of a data type, either basic type or user-defined type
     string  var_name;     ///< variable name
+    string  description;  ///< description
     size_t  array_size;   ///< array size: 0 for non-array
     bool    is_pointer;   ///< true when it's a pointer
     bool    is_bitfield;   ///< true when it's a pointer
