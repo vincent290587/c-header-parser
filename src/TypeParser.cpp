@@ -566,18 +566,19 @@ void TypeParser::DumpYaml(const string &name, std::ostream& ofs) const {
     const string yaml_space = "    ";
 
     // header
-    ofs << "TTC " << name << endl;
+    ofs << "# TTC " << name << endl;
     ofs << endl;
     ofs << "type: TTC" << endl;
     ofs << "name: " << name << endl;
     ofs << "version: 0.1" << endl;
     ofs << endl;
 
+    // TODO dump typedefs
     // dump numeric const variables or macros
-    ofs << "\nconstant values:" << "\n--------------------" << endl;
-    for (map <string, long>::const_iterator it = const_defs_.begin(); it != const_defs_.end(); ++it) {
-        ofs << "\t" << it->first << "\t = " << it->second << endl;
-    }
+//    ofs << "\nconstant values:" << "\n--------------------" << endl;
+//    for (map <string, long>::const_iterator it = const_defs_.begin(); it != const_defs_.end(); ++it) {
+//        ofs << "\t" << it->first << "\t = " << it->second << endl;
+//    }
 
     // dump enum definitions
     if (enum_defs_.size()) {
