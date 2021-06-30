@@ -27,6 +27,7 @@ typedef struct {
     string  var_name;     ///< variable name
     size_t  array_size;   ///< array size: 0 for non-array
     bool    is_pointer;   ///< true when it's a pointer
+    bool    is_bitfield;   ///< true when it's a pointer
     size_t  var_size;     ///< size in bytes
 } VariableDeclaration;
 

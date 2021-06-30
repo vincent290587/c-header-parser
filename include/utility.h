@@ -79,7 +79,7 @@ static inline std::string rands() {
 // tiny logging facility
 // To use it, g_log_level must be defined in one of the cpp files
 
-enum LogLevels { kDebug, kInfo, kError };
+enum LogLevels { kDebug, kInfo, kWarning, kError };
 extern LogLevels g_log_level;
 
 static void Log(enum LogLevels level, std::string msg) {
@@ -89,6 +89,10 @@ static void Log(enum LogLevels level, std::string msg) {
     switch(level) {
     case kError:
         os << "ERROR: ";
+        break;
+
+    case kWarning:
+        os << "WARNING: ";
         break;
 
     case kDebug:
@@ -105,6 +109,7 @@ static void Log(enum LogLevels level, std::string msg) {
 
 // logging shortcuts
 static void Error(std::string msg) { Log(kError, msg); }
+static void Warning(std::string msg) { Log(kWarning, msg); }
 static void Debug(std::string msg) { Log(kDebug, msg); }
 static void Info(std::string msg)  { Log(kInfo,  msg); }
 

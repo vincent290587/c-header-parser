@@ -19,7 +19,6 @@
 #endif
 
 #include <string>
-#include <iostream>
 #include <set>
 
 #include "utility.h"
@@ -34,6 +33,15 @@ LogLevels g_log_level = kError;
 
 #define TEST_ASSERT(NAME, X)   if (!(X)) {Error("Test " NAME " failed");return 1;} else { LogLevels lev_prev = g_log_level;g_log_level = kInfo;Info("Test " NAME " success");g_log_level = lev_prev; }
 
+#define TEST_EXPECT(NAME, X, Y) if (X == Y) { \
+                                    LogLevels lev_prev = g_log_level;g_log_level = kInfo;Info("Test " NAME " success");g_log_level = lev_prev; \
+                                } else {      \
+                                    string output = "Test " NAME " failed, expected ";  \
+                                    output += string(Y);          \
+                                    output += " got " + string(X);          \
+                                    Error(output); \
+                                    return 1; \
+                                }
 
 void ParseOptions(int argc, char **argv, string &struct_name, string &bin_file, set<string> &inc_paths) {
 //    struct_name = "Employee";
@@ -51,14 +59,31 @@ int main(int argc, char **argv) {
     TypeParser parser;
 
     VariableDeclaration decl;
-    parser.ParseDeclaration("uint16_t test_array[3];", decl);
+    parser.ParseDeclaration("unsigned short test_array[3];", decl);
 
     TEST_ASSERT("Array_size", decl.array_size==3);
     TEST_ASSERT("Var_size", decl.var_size==2);
+    TEST_EXPECT("Type", decl.data_type, "uint16_t");
 
-//    parser.SetIncludePaths(inc_paths);
-//    parser.ParseFiles();
-//    parser.DumpTypeDefs();
+    parser.ParseDeclaration("unsigned long long test_array;", decl);
+
+    TEST_ASSERT("Array_size", decl.array_size==0);
+    TEST_ASSERT("Var_size", decl.var_size==8);
+    TEST_EXPECT("Type", decl.data_type, "uint64_t");
+
+    parser.ParseDeclaration("signed long test_array;", decl);
+
+    TEST_ASSERT("Array_size", decl.array_size==0);
+    TEST_ASSERT("Var_size", decl.var_size==4);
+    TEST_EXPECT("Type", decl.data_type, "int32_t");
+
+    parser.SetIncludePaths(inc_paths);
+    parser.ParseFiles();
+
+    string name = "test";
+    // dump all to screen
+    parser.DumpYaml(name, cout);
+    //parser.DumpTypeDefs();
 
 //    DataReader reader(parser, bin_file);
 //    reader.PrintTypeData(struct_name, false/* struct */);

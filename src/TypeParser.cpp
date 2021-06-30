@@ -43,7 +43,7 @@ TypeParser::TypeParser(void) {
 void TypeParser::Initialize() {
     // basic data types
     const string data_types[] = {
-        "char", "short", "int", "size_t", "ssize_t", "long", "float", "double", "void", "bool", "__int64",
+        "char", "short", "int", "size_t", "ssize_t", "long", "float", "double", "void", "bool",
         "int8_t", "uint8_t", "int16_t", "uint16_t","int32_t", "uint32_t","int64_t", "uint64_t",
         "__WCHAR_T_TYPE__", "__SIZE_T_TYPE__", "__PTRDIFF_T_TYPE__"
     };
@@ -52,7 +52,7 @@ void TypeParser::Initialize() {
 
     // qualifiers to ignore in parsing
     const string qualifiers[] = {
-        "static", "const", "signed", "unsigned", "far", "extern", 
+        "static", "const", "far", "extern",
         "volatile", "auto", "register", "inline", "__attribute__"
     };
 
@@ -66,13 +66,16 @@ void TypeParser::Initialize() {
 
     // sizes of basic data types on 32-bit system, in bytes
     for (set <string>::const_iterator it = basic_types_.begin(); it != basic_types_.end(); ++it) {
-        type_sizes_[*it] = kWordSize_; 
+        type_sizes_[*it] = kWordSize_;
     }
     
     type_sizes_["void"]      = 0;
     type_sizes_["char"]      = 1;
     type_sizes_["short"]     = 2;
+    type_sizes_["int"]       = 4;
+    type_sizes_["float"]     = 4;
     type_sizes_["double"]    = 8;
+    type_sizes_["long long"] = 8;
     type_sizes_["bool"]      = 1;
     type_sizes_["__WCHAR_T_TYPE__"] = 1;
 
@@ -84,6 +87,24 @@ void TypeParser::Initialize() {
     type_sizes_["uint32_t"] = 4;
     type_sizes_["int64_t"] = 8;
     type_sizes_["uint64_t"] = 8;
+
+    //autogen_types_["void"]      = "";
+    autogen_types_["char"]      = "CHAR";
+    autogen_types_["short"]     = "UINT16";
+    autogen_types_["int"]       = "INT32";
+    autogen_types_["float"]     = "FLOAT";
+    autogen_types_["double"]    = "DOUBLE";
+    autogen_types_["bool"]      = "CHAR";
+    autogen_types_["__WCHAR_T_TYPE__"] = "CHAR";
+
+    autogen_types_["int8_t"]   = "INT8";
+    autogen_types_["uint8_t"]  = "UINT8";
+    autogen_types_["int16_t"]  = "INT16";
+    autogen_types_["uint16_t"] = "UINT16";
+    autogen_types_["int32_t"]  = "INT32";
+    autogen_types_["uint32_t"] = "UINT32";
+    autogen_types_["int64_t"]  = "INT64";
+    autogen_types_["uint64_t"] = "UINT64";
     
 }
 
@@ -494,6 +515,23 @@ bool TypeParser::IsNumericToken(const string &token, long& number) const {
     return ret;
 }
 
+string TypeParser::GetAtomicType(const string &data_type_) const {
+
+    string data_type = data_type_;
+
+    // replace signage
+    if (data_type.find("unsigned") != string::npos) {
+        assert(data_type.length() > 9);
+        data_type = data_type.substr(9);
+    }
+    if (data_type.find("signed") != string::npos) {
+        assert(data_type.length() > 7);
+        data_type = data_type.substr(7);
+    }
+
+    return data_type;
+}
+
 /// Get size of a type (in bytes) 
 ///
 /// @param[in]  data_type    name of a data type, including both C data types and user-defined struct/union/enum types
@@ -501,18 +539,126 @@ bool TypeParser::IsNumericToken(const string &token, long& number) const {
 ///
 /// @note Shouldn't return 0 for unknown data type since "void" type has zero length
 ///
-int TypeParser::GetTypeSize(const string &data_type) const {
+int TypeParser::GetTypeSize(const string &data_type_) const {
+
+    string data_type = GetAtomicType(data_type_);
+
     if (type_sizes_.find(data_type) != type_sizes_.end()) {
         return type_sizes_.at(data_type);
     } else if (enum_defs_.find(data_type) != enum_defs_.end()) {
         return sizeof(int);
     } else if (type_defs_.find(data_type) != type_defs_.end()) {
-        string matching_type = type_defs_.at(data_type);
-        return type_sizes_.at(matching_type);
+        string matching_type = GetAtomicType(type_defs_.at(data_type));
+        if (type_sizes_.find(matching_type) != type_sizes_.end()) {
+            return type_sizes_.at(matching_type);
+        }
+        assert(0);
     } else {
         Error("Unknown data type - " + data_type);
         return 0;
     }
+    return 0;
+}
+
+/// Dump the extracted type definitions
+void TypeParser::DumpYaml(const string &name, std::ostream& ofs) const {
+    VariableDeclaration var;
+    const string yaml_space = "    ";
+
+    // header
+    ofs << "TTC " << name << endl;
+    ofs << endl;
+    ofs << "type: TTC" << endl;
+    ofs << "name: " << name << endl;
+    ofs << "version: 0.1" << endl;
+    ofs << endl;
+
+    // dump numeric const variables or macros
+    ofs << "\nconstant values:" << "\n--------------------" << endl;
+    for (map <string, long>::const_iterator it = const_defs_.begin(); it != const_defs_.end(); ++it) {
+        ofs << "\t" << it->first << "\t = " << it->second << endl;
+    }
+
+    // dump enum definitions
+    if (enum_defs_.size()) {
+        ofs << "enums:" << endl;
+        for(map <string, list<pair<string, int> > >::const_iterator itv= enum_defs_.begin();
+            itv != enum_defs_.end(); ++itv) {
+
+            ofs << yaml_space << itv->first << ":" << endl;
+            ofs << yaml_space << yaml_space << "datatype: " << "UINT8" << endl; // TODO enum types
+            ofs << yaml_space << yaml_space << "values: {";
+
+            list< pair<string, int> > members = itv->second;
+            while (!members.empty()) {
+                pair<string, int> var = members.front();
+                ofs << var.first << ": " << var.second;
+                if (members.size() > 1) {
+                    ofs << ", ";
+                }
+                members.pop_front();
+            }
+
+            ofs << '}' << endl << endl;
+        }
+    }
+
+    ofs << endl;
+
+    // dump struct definitions
+    if (struct_defs_.size()) {
+        ofs << "structs:" << endl;
+        for (map<string, list<VariableDeclaration> >::const_iterator it = struct_defs_.begin();
+             it != struct_defs_.end(); ++it) {
+
+            ofs << yaml_space << it->first << ":" << endl;
+            ofs << yaml_space << yaml_space << "description: empty" << endl; // TODO yaml struct description
+            ofs << yaml_space << yaml_space << "parameters: " << endl;
+
+            list<VariableDeclaration> members = it->second;
+            while (!members.empty()) {
+                var = members.front();
+
+                ofs << yaml_space << yaml_space << yaml_space << "- " << var.var_name << ':' << endl;
+                ofs << yaml_space << yaml_space << yaml_space << yaml_space << "description: empty" << endl; // TODO yaml field description
+                ofs << yaml_space << yaml_space << yaml_space << yaml_space << "data: " << endl;
+
+                if (var.is_pointer) {
+                    assert(0);
+                }
+
+                {
+
+                    if (autogen_types_.find(var.data_type) != autogen_types_.end()) {
+                        ofs << yaml_space << yaml_space << yaml_space << yaml_space << yaml_space;
+                        ofs << "type: " << autogen_types_.at(var.data_type) << endl;
+                    } else {
+                        ofs << yaml_space << yaml_space << yaml_space << yaml_space << yaml_space;
+                        ofs << "type: " << var.data_type << endl;
+                    }
+
+                    if (var.array_size) {
+                        ofs << yaml_space << yaml_space << yaml_space << yaml_space << yaml_space;
+                        ofs << "array: " << var.array_size << endl;
+                    }
+
+                    if (var.is_bitfield) {
+                        ofs << yaml_space << yaml_space << yaml_space << yaml_space << yaml_space;
+                        ofs << "bits: " << var.var_size << endl;
+                    }
+                }
+
+                ofs << endl;
+
+                members.pop_front();
+            }
+
+            ofs << endl;
+        }
+    }
+
+    ofs << endl;
+
 }
 
 /// Dump the extracted type definitions
@@ -1237,32 +1383,68 @@ bool TypeParser::ParseDeclaration(const string &line, VariableDeclaration &decl)
 
         assert(size >= 5);// TODO bitfields
 
-        decl.data_type = "bitfield";
+        decl.data_type = tokens[index];
         decl.var_name = tokens[1];
         decl.is_pointer = false;
+        decl.is_bitfield = true;
         decl.array_size = 0;
         length = stoi(tokens[3]); // tokens 3 & 4
 
     } else {
         assert(size >= 3);  // even the simplest declaration contains 3 tokens: type var ;
 
-        decl.data_type = tokens[index];
+        decl.is_bitfield = false;
+
+        string data_type = tokens[index];
+        if (data_type.find("signed") != string::npos) {
+
+            // parse all types that can be signed separately:
+            map <string, string> matching_types_;
+            matching_types_["signed char"] = "char";
+            matching_types_["unsigned char"] = "char";
+            matching_types_["signed short"] = "int16_t";
+            matching_types_["unsigned short"] = "uint16_t";
+            matching_types_["signed long"] = "int32_t";
+            matching_types_["unsigned long"] = "uint32_t";
+            matching_types_["signed int"] = "int32_t";
+            matching_types_["unsigned int"] = "uint32_t";
+            matching_types_["signed long long"] = "int64_t";
+            matching_types_["unsigned long long"] = "uint64_t";
+            set <string> declarators = {"signed", "unsigned", "short", "long", "char", "int"};
+            while (declarators.find(tokens[index+1]) != declarators.end()) {
+                data_type += " ";
+                data_type += tokens[++index];
+            }
+
+            // replace
+            if (matching_types_.find(data_type) != matching_types_.end()) {
+                data_type = matching_types_.at(data_type);
+            } else {
+                assert(0);
+            }
+        }
+
+        decl.data_type = data_type;
         decl.is_pointer = false;
 
-         length = GetTypeSize(decl.data_type);
+        length = GetTypeSize(decl.data_type);
         if (0 == length) {
             Error("Unknown data type size: " + decl.data_type);
             return false;
         }
 
+        assert(index+1 < tokens.size());
         if (tokens[++index].at(0) == kAsterisk) {
             decl.is_pointer = true;
             length = kWordSize_; // size of a pointer is 4 types on a 32-bit system
+            assert(index+1 < tokens.size());
             decl.var_name = tokens[++index];
         } else {
+            assert(index < tokens.size());
             decl.var_name = tokens[index];
         }
 
+        assert(index+1 < tokens.size());
         if (tokens[++index].at(0) == '[') {
             long number;
             if (IsNumericToken(tokens[++index], number)) {

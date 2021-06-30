@@ -18,6 +18,8 @@
 
 #include <string>
 #include <utility>  // pair
+#include <iostream>
+#include <fstream>
 #include <vector>
 #include <list>
 #include <map>
@@ -43,7 +45,8 @@ public:
     void SetIncludePaths(set <string> paths);
 
     void DumpTypeDefs() const;
-    string Preprocess(ifstream& ifs) const;
+    void DumpYaml(const string &name, std::ostream& ofs) const;
+    string Preprocess(std::ifstream& ifs) const;
 
 
     bool ParseDeclaration(const string &line, VariableDeclaration &decl) const;
@@ -91,6 +94,7 @@ private:
     TokenTypes GetTokenType(const string &token) const;
     bool IsNumericToken(const string &token, long& number) const;
     int  GetTypeSize(const string &data_type) const;
+    string GetAtomicType(const string &data_type_) const;
 
 /// class members
 public:
@@ -119,6 +123,8 @@ private:
     /// Size of C data types and also user-defined struct/union types
     /// @note All enum types have fixed size, so they're not stored
     map <string, size_t> type_sizes_;
+
+    map <string, string> autogen_types_;
     
     /// Parsing result - extracted type definitions
     /// for below 3 maps:

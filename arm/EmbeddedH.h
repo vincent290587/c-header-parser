@@ -13,6 +13,11 @@ typedef unsigned char Boolean8bit;
 //    unsigned char val;
 //} Boolean8bit;
 
+typedef enum {
+    eMySampleEnumVal1,
+    eMySampleEnumVal2,
+} eMySampleEnum;
+
 typedef struct {
     unsigned char id;
     unsigned char software_id;
