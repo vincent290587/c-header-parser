@@ -23,7 +23,7 @@ typedef enum {
     eMySampleEnumVal2 = 3,
 } eMySampleEnum;
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
     unsigned char id;///< test1
     unsigned char software_id;
     unsigned int  obc_uptime;
@@ -35,7 +35,7 @@ typedef struct {
     char          prevFile[13];
 } ttc_cmdscheduler_replypacket_t;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
     char filepath[33]; //Enough space for /12345678/12345678/12345678.ext + \0
     Boolean8bit relative;
     uint8_t epoch1;

@@ -53,7 +53,7 @@ void TypeParser::Initialize() {
     // qualifiers to ignore in parsing
     const string qualifiers[] = {
         "static", "const", "far", "extern",
-        "volatile", "auto", "register", "inline", "__attribute__"
+        "volatile", "auto", "register", "inline",
     };
 
     qualifiers_ = set<string>(qualifiers, qualifiers + sizeof(qualifiers)/sizeof(string));
@@ -309,6 +309,20 @@ void TypeParser::StripComments(list<string>& lines) const {
             default:
                 pos++;  // might be other '/' after this one
             }        
+        }
+
+        // search attributes
+        while (string::npos != (pos = line.find("__attribute__"))) {
+
+            size_t end = line.find("))");
+
+            string tmp_line;
+            if (string::npos != end) {
+                tmp_line = line.substr(0, pos);
+                tmp_line += line.substr(end+2);
+                line = tmp_line;
+                is_changed = true;
+            }
         }
 
         // re-add the special description
@@ -697,7 +711,8 @@ bool TypeParser::GetNextToken(string src, size_t &pos, string &token, bool cross
     }
 
     // skip possible empty or ignorable tokens
-    while(!token.empty() && IsIgnorable(token)) GetNextToken(src, pos, token);
+    while(!token.empty() && IsIgnorable(token))
+        GetNextToken(src, pos, token);
 
     return (token.empty() ? false : true);
 }
