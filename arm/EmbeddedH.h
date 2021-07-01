@@ -53,7 +53,7 @@ typedef struct _TestStruct {
     int16_t manager[3];
     float testf;///< test1
     double testd; ///< test2
-    eMySampleEnum teste;
+    eMySampleEnum teste; ///< eMySampleEnum
     ttc_subcmd_executefile_t s1;
     ttc_cmdscheduler_replypacket_t s2;
 } TestStruct;
