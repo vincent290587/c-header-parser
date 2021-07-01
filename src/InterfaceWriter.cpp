@@ -43,7 +43,7 @@ void InterfaceWriter::PrepareSingleXML(sXMLINdexing &indexing, const VariableDec
         // single enum
         string line = "";
         char buff[200];
-        snprintf(buff, sizeof(buff), "    <option block_offset=\"%d\" type=\"%s\" name=\"%s\" description=\"%s\">&%s</option>",
+        snprintf(buff, sizeof(buff), "    <option block_offset=\"%d\" type=\"%s\" name=\"%s\" description=\"%s\">&%s;</option>",
                  indexing.cur_index,
                  "char", // TODO enum types
                  member.var_name.c_str(),
@@ -59,7 +59,7 @@ void InterfaceWriter::PrepareSingleXML(sXMLINdexing &indexing, const VariableDec
         // single typedef
         string line = "";
         char buff[200];
-        snprintf(buff, sizeof(buff), "    <number block_offset=\"%d\" type=\"%s\" name=\"%s\" description=\"%s\">",
+        snprintf(buff, sizeof(buff), "    <number block_offset=\"%d\" type=\"%s\" name=\"%s\" description=\"%s\" />",
                  indexing.cur_index,
                  type_parser_.type_defs_.at(type_name).c_str(),
                  member.var_name.c_str(),
@@ -119,19 +119,13 @@ void InterfaceWriter::PrepareXMLData(const string &type_name, size_t indent, boo
         return;
     }
 
-    // if it's a fake name assigned to anonymous type, then the fake name won't be printed
-//    if (0 == type_name.compare(0, sizeof(type_parser_.kAnonymousTypePrefix), type_parser_.kAnonymousTypePrefix)) {
-//        ofs << (is_union ? "union " : "struct ") << "{" << endl;
-//    } else {
-//        ofs << (is_union ? "union " : "struct ") << type_name << " {" << endl;
-//    }
-
+    ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
 
     // dump enum definitions
     string yaml_space = "    ";
     if (type_parser_.enum_defs_.size()) {
         ofs << endl;
-        ofs << "<!DOCTYPE note [" << endl;
+        ofs << "<!DOCTYPE " << type_name << " [" << endl;
         for(map <string, list<pair<string, int> > >::const_iterator itv= type_parser_.enum_defs_.begin();
                 itv != type_parser_.enum_defs_.end(); ++itv) {
 
@@ -155,7 +149,7 @@ void InterfaceWriter::PrepareXMLData(const string &type_name, size_t indent, boo
         ofs << "]>" << endl << endl;
     }
 
-    ofs << "<beacon xml:id=\"" << type_name << "\">" << endl;
+    ofs << "<" << type_name << " xml:id=\"" << type_name << "\">" << endl;
 
     indexing.cur_index = 0;
     for (VariableDeclaration mem : members) {
@@ -163,7 +157,7 @@ void InterfaceWriter::PrepareXMLData(const string &type_name, size_t indent, boo
         PrepareSingleXML(indexing, mem, ofs);
     }
 
-    ofs << "</beacon>" << endl;
+    ofs << "</" << type_name << ">" << endl;
 }
 
 /// Dump the extracted type definitions
