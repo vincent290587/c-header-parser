@@ -1,6 +1,7 @@
 #ifndef _COMMON_DEFINES_H_
 #define _COMMON_DEFINES_H_
 
+#define STRUCT_DESCR_KEY   "comment"
 /// Copyright(c) 2013 Frank Fang
 ///
 /// Common definitions that will be used in this project
@@ -54,7 +55,7 @@ enum TokenTypes {
 
 };
 
-/// @enum type for sigle character tokens
+/// @enum type for single character tokens
 enum SingleToken {
     kBlockStart = '{',
     kBlockEnd   = '}',

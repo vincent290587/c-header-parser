@@ -271,6 +271,13 @@ void TypeParser::StripComments(list<string>& lines) const {
 
         Debug("parsing line: [" + line + "]");
 
+        // check for a special field description
+        string whole_line = "";
+        if (line.find("///<") != string::npos) {
+            whole_line = STRUCT_DESCR_KEY;
+            whole_line += line.substr(line.find("///<")+strlen("///<"));
+        }
+
         // search comment start
         while (string::npos != (pos = line.find(kSlash, pos))) {
             if (line.length() <= pos+1) break;    // the 1st '/' is at the end of line, so not a comment
@@ -302,6 +309,12 @@ void TypeParser::StripComments(list<string>& lines) const {
             default:
                 pos++;  // might be other '/' after this one
             }        
+        }
+
+        // re-add the special description
+        if (whole_line.length()) {
+            line.append(whole_line);
+            is_changed = true;
         }
 
         if (!is_changed) {
@@ -621,7 +634,7 @@ void TypeParser::DumpYaml(const string &name, std::ostream& ofs) const {
                 var = members.front();
 
                 ofs << yaml_space << yaml_space << yaml_space << "- " << var.var_name << ':' << endl;
-                ofs << yaml_space << yaml_space << yaml_space << yaml_space << "description: empty" << endl; // TODO yaml field description
+                ofs << yaml_space << yaml_space << yaml_space << yaml_space << "description: " << var.description << endl;
                 ofs << yaml_space << yaml_space << yaml_space << yaml_space << "data: " << endl;
 
                 if (var.is_pointer) {
@@ -930,11 +943,16 @@ void TypeParser::ParseSource(const string &src) {
             switch (type) {
             case kStructKeyword:
             case kUnionKeyword:
-                assert(ParseStructUnion((kStructKeyword == type) ? true : false, 
-                    is_typedef, src, pos, decl, is_decl) && !is_decl);
+            {
+                bool ret = ParseStructUnion((kStructKeyword == type) ? true : false,
+                                            is_typedef, src, pos, decl, is_decl);
+                if (!ret) {
+                    assert(ret);
+                }
 
                 // reset is_typedef
                 is_typedef = false;
+            }
                 break;
 
             case kEnumKeyword:
@@ -1244,7 +1262,7 @@ bool TypeParser::ParseStructUnion(const bool is_struct, const bool is_typedef, c
                     return false;
                 }
                 
-                // TODO: also check position here
+                // also check position here
 			    assert(is_decl);
 			    members.push_back(member);
             }else if (kEnumKeyword == type) {
@@ -1253,7 +1271,7 @@ bool TypeParser::ParseStructUnion(const bool is_struct, const bool is_typedef, c
                     return false;
                 }
                 
-                // TODO: also check position here
+                // also check position here
 			    assert(is_decl);                
 			    members.push_back(member);
             } else {
@@ -1262,8 +1280,19 @@ bool TypeParser::ParseStructUnion(const bool is_struct, const bool is_typedef, c
                     assert(GetNextLine(src, pos, line));
                 }
 
+                // check next token for Doxygen comment
+                string descr = "";
+                string tmp_token = "";
+                size_t tmp_pos = pos;
+                if (GetNextToken(src, tmp_pos, tmp_token)) {
+                    if (tmp_token == STRUCT_DESCR_KEY) {
+                        (void)GetRestLine(src, tmp_pos, descr);
+                        pos = tmp_pos;
+                    }
+                }
+
                 line = token + " " + line;
-                if (!ParseDeclaration(line, member)) {			        
+                if (!ParseDeclaration(line, member, descr)) {
 			        Error("Unresolved struct/union member declaration syntax");
                     return false;
 		        } 
@@ -1372,7 +1401,13 @@ bool TypeParser::ParseEnumDeclaration(const string &line,
 ///
 /// @note type size are calculated will simple consideration of alignment
 /// @note can be improved with consideration of multiple demension array
-bool TypeParser::ParseDeclaration(const string &line, VariableDeclaration &decl) const {
+bool TypeParser::ParseDeclaration(const string &line_, VariableDeclaration &decl, const string comment) const {
+
+    string line = line_;
+
+    //set description
+    decl.description = comment;
+
     assert(!line.empty());
     if (line[line.length()-1] != kSemicolon) return false;
 
@@ -1382,7 +1417,7 @@ bool TypeParser::ParseDeclaration(const string &line, VariableDeclaration &decl)
     size_t size = SplitLineIntoTokens(line, tokens);
     if (line.find(':') != string::npos) {
 
-        assert(size >= 5);// TODO bitfields
+        assert(size >= 5);
 
         decl.data_type = tokens[index];
         decl.var_name = tokens[1];

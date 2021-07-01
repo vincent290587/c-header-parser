@@ -24,7 +24,7 @@ typedef enum {
 } eMySampleEnum;
 
 typedef struct {
-    unsigned char id;
+    unsigned char id;///< test1
     unsigned char software_id;
     unsigned int  obc_uptime;
     unsigned int  obc_epoch;
@@ -51,8 +51,8 @@ typedef struct {
 
 typedef struct _TestStruct {
     int16_t manager[3];
-    float testf;
-    double testd;
+    float testf;///< test1
+    double testd; ///< test2
     eMySampleEnum teste;
     ttc_subcmd_executefile_t s1;
     ttc_cmdscheduler_replypacket_t s2;

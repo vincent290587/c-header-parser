@@ -49,7 +49,7 @@ public:
     string Preprocess(std::ifstream& ifs) const;
 
 
-    bool ParseDeclaration(const string &line, VariableDeclaration &decl) const;
+    bool ParseDeclaration(const string &line, VariableDeclaration &decl, const string comment = "") const;
     bool ParseEnumDeclaration(const string &line, int &last_value, pair<string, int> &decl, bool &is_last_member) const;
     bool ParseAssignExpression(const string &line);
 
