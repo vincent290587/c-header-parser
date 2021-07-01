@@ -27,6 +27,7 @@
 
 #include "utility.h"
 #include "TypeParser.h"
+#include "InterfaceWriter.h"
 #include "DataReader.h"
 
 using namespace std;
@@ -35,19 +36,20 @@ using namespace std;
 LogLevels g_log_level = kInfo;
 
 void usage(char* prog) {
-    cout << "Usage:\n\t" << prog << " -s <struct_name> -b <binary_file> -i<include_path> [-h]" << endl;
+    cout << "Usage:\n\t" << prog << " -s <struct_name> -i<include_path> [-y <yaml_file>] [-x <xml_file>] [-b <binary_file>] [-h]" << endl;
 }
 
 typedef struct {
     string struct_name;
     string bin_file;
     string yaml_file;
+    string xml_file;
     set<string> inc_paths;
 } sParams;
 
 void ParseOptions(int argc, char **argv, sParams &params) {
     char c;
-    while ((c = getopt (argc, argv, "s:b:i:y:h")) != -1) {
+    while ((c = getopt (argc, argv, "s:b:i:y:x:h")) != -1) {
         if (optarg) {
             string msg = "Argument ";
             msg += c;
@@ -65,6 +67,10 @@ void ParseOptions(int argc, char **argv, sParams &params) {
 
             case 'y':
                 params.yaml_file = string(optarg);
+                break;
+
+            case 'x':
+                params.xml_file = string(optarg);
                 break;
 
             case 'h':
@@ -105,9 +111,16 @@ int main(int argc, char **argv) {
     parser.ParseFiles();
     parser.DumpTypeDefs();
 
+    InterfaceWriter writer(parser);
+
     if (!params.yaml_file.empty()) {
-        std:ofstream ofs(params.yaml_file);
-        parser.DumpYaml(params.struct_name, ofs);
+        ofstream ofs(params.yaml_file);
+        writer.PrintYAMLData(params.struct_name, ofs);
+    }
+
+    if (!params.xml_file.empty()) {
+        ofstream ofs(params.xml_file);
+        writer.PrintXMLData(params.struct_name, ofs);
     }
 
     if (!params.bin_file.empty()) {

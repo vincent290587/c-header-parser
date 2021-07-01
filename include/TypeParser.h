@@ -31,8 +31,9 @@
 
 class TypeParser
 {
-/// add this friend class so that the type definitions can be used by it to parse the log data
-friend class DataReader;
+    /// add this friend class so that the type definitions can be used by it to parse the log data
+    friend class DataReader;
+    friend class InterfaceWriter;
 
 public:
     TypeParser(void);
@@ -45,7 +46,6 @@ public:
     void SetIncludePaths(set <string> paths);
 
     void DumpTypeDefs() const;
-    void DumpYaml(const string &name, std::ostream& ofs) const;
     string Preprocess(std::ifstream& ifs) const;
 
 

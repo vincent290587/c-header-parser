@@ -24,6 +24,7 @@
 #include "utility.h"
 #include "TypeParser.h"
 #include "DataReader.h"
+#include "InterfaceWriter.h"
 
 using namespace std;
 
@@ -82,10 +83,10 @@ int main(int argc, char **argv) {
 
     string name = "test";
 
-    DataReader reader(parser);
+    InterfaceWriter writer(parser);
     // dump all to screen
-    parser.DumpYaml(name, cout);
-    reader.PrintXMLData(struct_name, false, cout);
+    writer.PrintYAMLData(struct_name, cout);
+    writer.PrintXMLData(struct_name, cout);
 
     return 0;
 }

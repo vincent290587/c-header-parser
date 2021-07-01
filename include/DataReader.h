@@ -7,12 +7,6 @@
 using namespace std;
 
 
-typedef struct {
-    int cur_index;
-    string firstParent;
-} sXMLINdexing;
-
-
 /// Copyright(c) 2013 Frank Fang
 ///
 /// Binary memory data reader for C types
@@ -33,21 +27,13 @@ public:
     /// memory data comes from binary file
     DataReader(const TypeParser& parser, const string &data_file);
 
-    // no memory data
-    DataReader(const TypeParser& parser);
-
     ~DataReader(void);
 
     /// print the type fields and their values in a nicely fomatted way
     void PrintTypeData(const string &type_name, bool is_union = false);
-
-    void PrintXMLData(const string &type_name, bool is_union, std::ostream &ofs);
     
 private:
 	void PrepareTypeData(const string &type_name, size_t indent, bool is_union);
-
-    void PrepareSingleXML(sXMLINdexing &indexing, const VariableDeclaration &members, std::ostream &ofs);
-    void PrepareXMLData(const string &type_name, size_t indent, bool is_union, std::ostream &ofs);
 
     void PrintMemberData(list<VariableDeclaration>& members, size_t indent, bool is_union);
     void PrintVarData(const VariableDeclaration &def, size_t indent, bool is_union);
