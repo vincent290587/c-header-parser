@@ -58,4 +58,6 @@ typedef struct _TestStruct {
     ttc_cmdscheduler_replypacket_t s2;
 } TestStruct;
 
+void test_function(TestStruct *p_test);
+
 #endif //CHP_EMBEDDEDH_H
