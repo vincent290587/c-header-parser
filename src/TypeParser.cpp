@@ -1200,6 +1200,7 @@ bool TypeParser::ParseStructUnion(const bool is_struct, const bool is_typedef, c
                 if (GetNextToken(src, tmp_pos, tmp_token)) {
                     if (tmp_token == STRUCT_DESCR_KEY) {
                         (void)GetRestLine(src, tmp_pos, descr);
+                        descr = trim(descr);
                         pos = tmp_pos;
                     }
                 }
